@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letter Creator</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* --- Page background per letter type --- */
+body.love { background: #8B0000; } /* deep red love background */
+body.birthday { background: #FFD700; }
+body.formal { background: #C0C0C0; }
+body.informal { background: #32CD32; }
+body.invitation { background: #BA55D3; }
+body.apology { background: #FF6347; }
+body.farewell { background: #00CED1; }
+
+/* Letter box stays white */
+.letter {
+  background: #fff;
+  border-radius: 18px;
+  padding: 40px;
+  width: 100%;
+  max-width: 700px;
+  margin: 20px auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  transition: font-family 0.3s, font-size 0.3s, color 0.3s;
+  position: relative;
+}
+
+/* Letter titles with their fonts */
+.letter h1 {
+  margin-top: 0;
+  font-size: 28px;
+}
+#letter-love h1 { font-family: 'Dancing Script', cursive; color: #8B0000; }
+#letter-birthday h1 { font-family: 'Libre Baskerville', serif; color: #FFD700; }
+#letter-formal h1 { font-family: 'Cormorant Garamond', serif; color: #696969; }
+#letter-informal h1 { font-family: 'Libre Baskerville', serif; color: #228B22; }
+#letter-invitation h1 { font-family: 'Playfair Display', serif; color: #8A2BE2; }
+#letter-apology h1 { font-family: 'Cormorant Garamond', serif; color: #FF4500; }
+#letter-farewell h1 { font-family: 'Libre Baskerville', serif; color: #20B2AA; }
+
+/* Circular modern pause/play button */
+#musicToggle {
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #555;
+  color: #fff;
+  transition: background 0.3s, transform 0.2s;
+}
+#musicToggle:hover { transform: scale(1.1); }
+
+/* Action buttons */
+.action-buttons button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Wax Seal animation */
+.waxSeal {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  opacity: 0;
+  transform: scale(0.5);
+  box-shadow: 0 0 12px rgba(0,0,0,0.3);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.waxSeal.show { opacity: 1; transform: scale(1); }
+
+/* Font size slider */
+#fontSizeSlider { width: 100px; margin-left: 10px; }
+
+/* Improved color picker */
+#fontColor {
+  -webkit-appearance: none;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  padding: 0;
+}
+#fontColor::-webkit-color-swatch-wrapper { padding: 0; }
+#fontColor::-webkit-color-swatch { border-radius: 8px; }
+</style>
+<!-- Google Fonts for cursive Love Letter -->
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+</head>
+<body class="love">
+
+<!-- ENVELOPE SCREEN -->
+<div id="envelopeScreen">
+  <div class="envelope">
+    <div class="env-back"></div>
+    <div class="env-front"></div>
+    <div class="env-flap"></div>
+  </div>
+  <button id="openLetterBtn">Open Letter</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+
+  <!-- TOP CONTROLS -->
+  <div class="top-controls">
+    <select id="letterType">
+      <option value="love">Love Letter</option>
+      <option value="birthday">Birthday Letter</option>
+      <option value="formal">Formal Letter</option>
+      <option value="informal">Informal Letter</option>
+      <option value="invitation">Invitation Letter</option>
+      <option value="apology">Apology Letter</option>
+      <option value="farewell">Farewell Letter</option>
+    </select>
+
+    <select id="fontSelect">
+      <option value="'Playfair Display', serif">Playfair Display</option>
+      <option value="'Cormorant Garamond', serif">Cormorant Garamond</option>
+      <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+      <option value="'Georgia', serif">Georgia</option>
+      <option value="'Times New Roman', serif">Times New Roman</option>
+      <option value="'Verdana', sans-serif">Verdana</option>
+      <option value="'Arial', sans-serif">Arial</option>
+      <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="'Lucida Console', monospace">Lucida Console</option>
+    </select>
+
+    <input type="color" id="fontColor" value="#3b1f1f">
+    <label>Font Size:</label>
+    <input type="range" id="fontSizeSlider" min="12" max="48" value="16">
+
+    <button id="musicToggle"></button>
+  </div>
+
+  <!-- LETTERS -->
+  <div class="letter-container">
+    <!-- Love Letter -->
+    <div id="letter-love" class="letter">
+      <p class="date"></p>
+      <p class="dear">Dear <span id="receiverName" contenteditable="true" class="editable-box">Someone Special</span>,</p>
+      <h1 id="title">A Letter From My Heart 💖</h1>
+      <div class="body editable-box" contenteditable="true">
+        This letter is written with love and sincerity...
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span id="senderName" contenteditable="true" class="editable-box">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Birthday Letter -->
+    <div id="letter-birthday" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Someone</span>,</p>
+      <h1 id="title">Happy Birthday Wishes 🎉</h1>
+      <div class="body editable-box" contenteditable="true">
+        Wishing you a day full of joy and surprises!
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Formal Letter -->
+    <div id="letter-formal" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Recipient</span>,</p>
+      <h1 id="title">A Formal Letter 📝</h1>
+      <div class="body editable-box" contenteditable="true">
+        This letter is written to formally communicate an important matter.
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Informal Letter -->
+    <div id="letter-informal" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Friend</span>,</p>
+      <h1 id="title">Just Saying Hello 👋</h1>
+      <div class="body editable-box" contenteditable="true">
+        Just sharing some casual thoughts and greetings.
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Invitation Letter -->
+    <div id="letter-invitation" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Friend</span>,</p>
+      <h1 id="title">You’re Invited 🎀</h1>
+      <div class="body editable-box" contenteditable="true">
+        We would love for you to join us at this special event.
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Apology Letter -->
+    <div id="letter-apology" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Recipient</span>,</p>
+      <h1 id="title">A Sincere Apology 🙏</h1>
+      <div class="body editable-box" contenteditable="true">
+        I am deeply sorry and hope you can forgive me.
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+
+    <!-- Farewell Letter -->
+    <div id="letter-farewell" class="letter hidden">
+      <p class="date"></p>
+      <p class="dear">Dear <span class="editable-box" contenteditable="true">Friend</span>,</p>
+      <h1 id="title">Saying Goodbye 👋</h1>
+      <div class="body editable-box" contenteditable="true">
+        This letter is to say farewell with gratitude and memories.
+      </div>
+      <p class="closing">Sincerely,<br>
+        <span class="editable-box" contenteditable="true">Your Name</span>
+      </p>
+      <div class="waxSeal">♥</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM CONTROLS -->
+  <div class="bottom-controls">
+    <input type="email" id="recipient" placeholder="Recipient Email">
+    <div class="action-buttons">
+      <button id="saveDraftBtn">Save Draft</button>
+      <button id="sendBtn">Send</button>
+      <button id="exportBtn">Export PDF</button>
+    </div>
+  </div>
+</div>
+
+<audio id="music" loop></audio>
+<script src="script.js"></script>
+</body>
+</html>
