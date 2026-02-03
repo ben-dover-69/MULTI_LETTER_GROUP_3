@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View Letter</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+/* Letter Type Title animation (above letter box) */
+#letterTypeTitle {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 15px;
+}
+
+/* Show animation */
+#letterTypeTitle.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Wax seal initials */
+.waxSeal span {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 22px;
+  color: white;
+}
+
+/* Old pause/play toggle (triangle and double I) */
+#musicToggle.playing::before { content: '❚❚'; }
+#musicToggle.paused::before { content: '►'; }
+#musicToggle {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Preserve line breaks inside letter body */
+.letter .body {
+  white-space: pre-wrap;
+}
+
+/* Position title above letter box */
+.letter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+</style>
+</head>
+<body class="love">
+
+<!-- ENVELOPE -->
+<div id="envelopeScreen">
+  <div class="envelope">
+    <div class="env-back"></div>
+    <div class="env-front"></div>
+    <div class="env-flap"></div>
+  </div>
+  <button id="openLetterBtn">Open Letter</button>
+</div>
+
+<!-- MAIN VIEW -->
+<div id="app" class="hidden">
+
+  <!-- Letter Type Title -->
+  <h2 id="letterTypeTitle"></h2>
+
+  <!-- LETTER -->
+  <div class="letter-container">
+    <div id="letter" class="letter">
+      <p class="date" id="date"></p>
+
+      <p class="dear">Dear <span id="receiverName" class="editable-box" contenteditable="false">Receiver Name</span>,</p>
+
+      <!-- Letter body -->
+      <div id="body" class="body editable-box" contenteditable="false">
+        This is the body of the letter.
+      </div>
+
+      <p class="closing">Sincerely,<br>
+        <span id="senderName" class="editable-box" contenteditable="false">Sender Name</span>
+      </p>
+
+      <div id="waxSeal" class="waxSeal"><span id="waxInitials"></span></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM CONTROLS -->
+  <div class="bottom-controls">
+    <div class="action-buttons">
+      <button id="exportBtn">Export PDF</button>
+      <button id="musicToggle"> Play Music</button>
+    </div>
+  </div>
+</div>
+
+<audio id="music" loop></audio>
+
+<script>
+const openBtn = document.getElementById("openLetterBtn");
+const envelope = document.querySelector(".envelope");
+const envelopeScreen = document.getElementById("envelopeScreen");
+const app = document.getElementById("app");
+const waxSeal = document.getElementById("waxSeal");
+const waxInitials = document.getElementById("waxInitials");
+const letter = document.getElementById("letter");
+const music = document.getElementById("music");
+const musicToggle = document.getElementById("musicToggle");
+const exportBtn = document.getElementById("exportBtn");
+const dateEl = document.getElementById("date");
+const bodyEl = document.getElementById("body");
+const letterTypeTitle = document.getElementById("letterTypeTitle");
+const receiverNameEl = document.getElementById("receiverName");
+const senderNameEl = document.getElementById("senderName");
+
+// Default bodies per letter type
+const defaultBodies = {
+  love: "A Letter From My Heart 💖",
+  birthday: "Wishing you a day full of joy and surprises!",
+  formal: "This letter is written to formally communicate an important matter.",
+  informal: "Just sharing some casual thoughts and greetings.",
+  invitation: "We would love for you to join us at this special event.",
+  apology: "I am deeply sorry and hope you can forgive me.",
+  farewell: "This letter is to say farewell with gratitude and memories."
+};
+
+// Letter type title fonts
+const typeTitleFonts = {
+  love: "'Dancing Script', cursive",
+  birthday: "'Libre Baskerville', serif",
+  formal: "'Cormorant Garamond', serif",
+  informal: "'Libre Baskerville', serif",
+  invitation: "'Playfair Display', serif",
+  apology: "'Cormorant Garamond', serif",
+  farewell: "'Libre Baskerville', serif"
+};
+
+// Music files per type
+const musicFiles = {
+  love: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/kuped.mp3",
+  birthday: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/bdaysmegs.mp3",
+  formal: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/peynknwite.mp3",
+  informal: "",
+  invitation: "",
+  apology: "",
+  farewell: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/farewell.mp3"
+};
+
+// READ DATA FROM URL
+const params = new URLSearchParams(window.location.search);
+const receiver = params.get("receiver");
+const sender = params.get("sender");
+const type = params.get("type") || "love";
+const bodyEncoded = params.get("body"); // Base64-encoded body text
+
+// Decode Base64 body (if encoded) and set content
+function decodeContent(str) {
+  try {
+    return decodeURIComponent(escape(atob(str)));
+  } catch(e) {
+    return str; // fallback if not encoded
+  }
+}
+bodyEl.innerHTML = bodyEncoded ? decodeContent(bodyEncoded) : defaultBodies[type];
+
+// Letter type title
+letterTypeTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1) + " Letter";
+letterTypeTitle.style.fontFamily = typeTitleFonts[type] || "'Libre Baskerville', serif";
+
+// Names
+if(receiver) receiverNameEl.textContent = receiver;
+if(sender) senderNameEl.textContent = sender;
+
+// Wax initials
+if(sender){
+  const initials = sender.split(' ').map(n => n[0].toUpperCase()).join('');
+  waxInitials.textContent = initials;
+}
+
+// Date
+dateEl.textContent = new Date().toDateString();
+
+// OPEN ENVELOPE
+openBtn.onclick = () => {
+  envelope.classList.add("open");
+  const flap = document.querySelector(".env-flap");
+  flap.style.transition = "transform 0.7s ease";
+  flap.style.transform = "rotateX(180deg)";
+
+  setTimeout(() => {
+    envelopeScreen.style.display = "none";
+    app.classList.remove("hidden");
+
+    // Wax seal animation
+    setTimeout(() => waxSeal.classList.add("show"), 1000);
+
+    // Animate letter type title
+    letterTypeTitle.classList.add("show");
+
+    // Play music
+    music.src = musicFiles[type] || musicFiles.love;
+    music.play();
+    updateMusicButton();
+  }, 700);
+};
+
+// MUSIC TOGGLE (Old style triangle / double I)
+function updateMusicButton() {
+  if(music.paused){
+    musicToggle.classList.remove('playing');
+    musicToggle.classList.add('paused');
+    musicToggle.textContent = ' Play Music';
+  } else {
+    musicToggle.classList.remove('paused');
+    musicToggle.classList.add('playing');
+    musicToggle.textContent = ' Pause Music';
+  }
+}
+musicToggle.onclick = () => {
+  if(music.paused) music.play();
+  else music.pause();
+  updateMusicButton();
+};
+updateMusicButton();
+
+// EXPORT PDF
+exportBtn.onclick = () => html2pdf().from(letter).save("letter.pdf");
+
+</script>
+</body>
+</html>
