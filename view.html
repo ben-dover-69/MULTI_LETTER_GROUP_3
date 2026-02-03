@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View Letter</title>
+<link rel="stylesheet" href="https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="love">
+
+<!-- ENVELOPE -->
+<div id="envelopeScreen">
+  <div class="envelope">
+    <div class="env-back"></div>
+    <div class="env-front"></div>
+    <div class="env-flap"></div>
+  </div>
+  <button id="openLetterBtn">Open Letter</button>
+</div>
+
+<!-- MAIN VIEW -->
+<div id="app" class="hidden">
+
+  <!-- LETTER -->
+  <div class="letter-container">
+    <div id="letter" class="letter">
+      <p class="date" id="date"></p>
+
+      <p class="dear">Dear <span id="receiverName" class="editable-box" contenteditable="false">Receiver Name</span>,</p>
+
+      <h1 id="title">Letter Title</h1>
+
+      <div id="body" class="body editable-box" contenteditable="false">
+        This is the body of the letter.
+      </div>
+
+      <p class="closing">Sincerely,<br>
+        <span id="senderName" class="editable-box" contenteditable="false">Sender Name</span>
+      </p>
+
+      <div id="waxSeal" class="waxSeal"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM CONTROLS -->
+  <div class="bottom-controls">
+    <div class="action-buttons">
+      <button id="exportBtn">Export PDF</button>
+      <button id="musicToggle">▶ Play Music</button>
+    </div>
+  </div>
+</div>
+
+<audio id="music" loop src="https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/kuped.mp3"></audio>
+
+<script>
+  // ELEMENTS
+  const openBtn = document.getElementById("openLetterBtn");
+  const envelope = document.querySelector(".envelope");
+  const envelopeScreen = document.getElementById("envelopeScreen");
+  const app = document.getElementById("app");
+  const waxSeal = document.getElementById("waxSeal");
+  const letter = document.getElementById("letter");
+  const music = document.getElementById("music");
+  const musicToggle = document.getElementById("musicToggle");
+  const exportBtn = document.getElementById("exportBtn");
+  const dateEl = document.getElementById("date");
+
+  // DATE
+  dateEl.textContent = new Date().toDateString();
+
+  // MUSIC FILES
+  const musicFiles = {
+    love: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/kuped.mp3",
+    birthday: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/bdaysmegs.mp3",
+    formal: "https://ben-dover-69.github.io/MULTI_LETTER_GROUP_3/peynknwite.mp3"
+  };
+
+  // ===============================
+  // ✅ FIX — READ LETTER DATA FROM URL
+  // ===============================
+  const params = new URLSearchParams(window.location.search);
+
+  const receiver = params.get("recipient");
+  const title = params.get("letter_title");
+  const body = params.get("letter_content");
+  const sender = params.get("sender_name");
+  const type = params.get("letter_type");
+
+  if (receiver) document.getElementById("receiverName").textContent = receiver;
+  if (title) document.getElementById("title").textContent = title;
+  if (body) document.getElementById("body").innerHTML = decodeURIComponent(body.replace(/\+/g, " ")).replace(/\n/g, "<br>");
+  if (sender) document.getElementById("senderName").textContent = sender;
+  if (type) document.body.className = type;
+
+  // ===============================
+
+  // OPEN ENVELOPE
+  openBtn.onclick = () => {
+    envelope.classList.add("open");
+    const flap = document.querySelector(".env-flap");
+    flap.style.transition = "transform 0.7s ease";
+    flap.style.transform = "rotateX(180deg)";
+
+    setTimeout(() => {
+      envelopeScreen.style.display = "none";
+      app.classList.remove("hidden");
+
+      setTimeout(() => {
+        waxSeal.classList.add("show");
+      }, 1000);
+
+      // Play music based on letter type
+      const currentType = document.body.className;
+      music.src = musicFiles[currentType] || musicFiles.love;
+      music.play();
+      musicToggle.textContent = "⏸ Pause Music";
+    }, 700);
+  };
+
+  // MUSIC TOGGLE
+  musicToggle.onclick = () => {
+    if (music.paused) {
+      music.play();
+      musicToggle.textContent = "⏸ Pause Music";
+    } else {
+      music.pause();
+      musicToggle.textContent = "▶ Play Music";
+    }
+  };
+
+  // EXPORT PDF
+  exportBtn.onclick = () => html2pdf().from(letter).save("letter.pdf");
+</script>
+
+</body>
+</html>
